@@ -12,7 +12,7 @@ Adim 4.2.b'de eklenecek:
   GET  /api/download/<session_id>
 """
 import logging
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 
 from . import config
 from . import sessions as session_mgr
@@ -68,53 +68,8 @@ def create_app() -> Flask:
     # ------------------------------------------------------------------
     @app.route('/')
     def index():
-        """Ana sayfa - su an placeholder."""
-        return """<!DOCTYPE html>
-<html lang="tr">
-<head>
-  <meta charset="utf-8">
-  <title>Wood Sculpture Slicer</title>
-  <style>
-    body {
-      font-family: -apple-system, sans-serif;
-      background: #0a0a0a;
-      color: #e5e5e5;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      margin: 0;
-    }
-    .container {
-      text-align: center;
-      max-width: 480px;
-      padding: 2rem;
-    }
-    h1 {
-      font-weight: 300;
-      letter-spacing: -0.02em;
-      margin: 0 0 1rem;
-    }
-    .accent { color: #f59e0b; }
-    p { color: #888; line-height: 1.5; }
-    code {
-      background: #1a1a1a;
-      padding: 0.2em 0.4em;
-      border-radius: 3px;
-      font-size: 0.9em;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h1>Wood Sculpture <span class="accent">Slicer</span></h1>
-    <p>Web arayuzu yapim asamasinda.</p>
-    <p>Su an icin komut satiri:<br>
-       <code>python3 main.py models/Hermes.stl --export</code></p>
-  </div>
-</body>
-</html>
-"""
+        """Ana sayfa."""
+        return render_template('index.html')
 
     @app.route('/health')
     def health():

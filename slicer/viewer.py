@@ -72,9 +72,9 @@ def plot_slice_grid(result, output_path=None, cols=10, max_slices=None):
             ax.axis('off')
 
     fig.suptitle(
-        f"Dilimler ({AXIS_NAMES[result.slice_axis]} ekseni, "
+        f"Slices ({AXIS_NAMES[result.slice_axis]} axis, "
         f"{result.plywood_thickness}mm plywood, "
-        f"toplam {result.non_empty_count} dilim)",
+        f"{result.non_empty_count} slices total)",
         fontsize=12
     )
     plt.tight_layout()
@@ -104,7 +104,7 @@ def plot_assembly_preview(result, output_path=None):
                     edgecolor=color, linewidth=0.4)
 
     ax.set_aspect('equal')
-    ax.set_title(f"Tum dilimler ust uste - {AXIS_NAMES[result.slice_axis]} ekseni")
+    ax.set_title(f"Stacked outline — {AXIS_NAMES[result.slice_axis]} axis")
     ax.grid(True, alpha=0.3)
 
     if output_path:

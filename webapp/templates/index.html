@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Wood Sculpture Slicer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">◐</span>
+      <span class="brand-name">Wood Sculpture <span class="accent">Slicer</span></span>
+    </div>
+    <nav class="topnav">
+      <a href="https://github.com/volaria/wood-sculpture-slicer" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </header>
+
+  <main class="layout">
+
+    <!-- LEFT PANEL: controls -->
+    <aside class="panel panel-left">
+
+      <!-- 1. MODEL -->
+      <section class="card">
+        <h2 class="card-title"><span class="step">1</span> Model</h2>
+
+        <div id="dropzone" class="dropzone">
+          <input id="file-input" type="file" accept=".stl,.obj" hidden>
+          <div class="dropzone-content">
+            <div class="dropzone-icon">⤴</div>
+            <div class="dropzone-text">
+              Drop your STL or OBJ file here<br>
+              <span class="muted">or click to browse</span>
+            </div>
+          </div>
+        </div>
+
+        <div id="file-info" class="file-info hidden">
+          <div class="file-info-row">
+            <span class="file-name" id="file-name">—</span>
+            <button id="file-remove" class="btn-icon" title="Remove">×</button>
+          </div>
+          <dl class="kv">
+            <div><dt>Vertices</dt><dd id="kv-vertex">—</dd></div>
+            <div><dt>Faces</dt><dd id="kv-face">—</dd></div>
+            <div><dt>X</dt><dd id="kv-x">—</dd></div>
+            <div><dt>Y</dt><dd id="kv-y">—</dd></div>
+            <div><dt>Z</dt><dd id="kv-z">—</dd></div>
+            <div><dt>Watertight</dt><dd id="kv-wt">—</dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <!-- 2. SETTINGS -->
+      <section class="card" id="settings-card">
+        <h2 class="card-title"><span class="step">2</span> Settings</h2>
+
+        <div class="form-group">
+          <label class="form-label">Slice axis</label>
+          <div class="radio-row">
+            <label class="radio"><input type="radio" name="axis" value="X" checked><span>X</span></label>
+            <label class="radio"><input type="radio" name="axis" value="Y"><span>Y</span></label>
+            <label class="radio"><input type="radio" name="axis" value="Z"><span>Z</span></label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="size">Sculpture height <span class="muted">(mm)</span></label>
+          <input type="number" id="size" min="10" max="2000" step="1" value="250">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="thickness">Plywood <span class="muted">(mm)</span></label>
+            <input type="number" id="thickness" min="0.5" max="30" step="0.1" value="3.0">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="kerf">Kerf <span class="muted">(mm)</span></label>
+            <input type="number" id="kerf" min="0" max="1" step="0.01" value="0.08">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="pin-diameter">Pin Ø <span class="muted">(mm)</span></label>
+            <input type="number" id="pin-diameter" min="1" max="10" step="0.1" value="3.0">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="size-axis">Height axis</label>
+            <select id="size-axis">
+              <option value="Z" selected>Z</option>
+              <option value="X">X</option>
+              <option value="Y">Y</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Output format</label>
+          <div class="checkbox-row">
+            <label class="checkbox"><input type="checkbox" id="fmt-dxf" checked><span>DXF</span></label>
+            <label class="checkbox"><input type="checkbox" id="fmt-svg" checked><span>SVG</span></label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="checkbox checkbox-line">
+            <input type="checkbox" id="edge-tick">
+            <span>Add edge tick number <span class="muted">(readable from the side during assembly)</span></span>
+          </label>
+        </div>
+
+        <button id="btn-process" class="btn btn-primary" disabled>
+          <span class="btn-label">Generate</span>
+          <span class="btn-spinner hidden"></span>
+        </button>
+
+        <div id="process-error" class="error-box hidden"></div>
+      </section>
+
+    </aside>
+
+    <!-- RIGHT PANEL: preview + results -->
+    <section class="panel panel-right">
+
+      <!-- 3D PREVIEW -->
+      <section class="card">
+        <h2 class="card-title">3D Preview</h2>
+        <div id="viewer-3d" class="viewer-3d">
+          <div class="viewer-empty">
+            Upload a model to see it here
+          </div>
+        </div>
+      </section>
+
+      <!-- SLICE RESULTS -->
+      <section class="card" id="result-card">
+        <h2 class="card-title">Slices</h2>
+        <div id="result-empty" class="result-empty">
+          No output yet
+        </div>
+        <div id="result-content" class="hidden">
+          <div class="report-grid" id="report-grid"></div>
+
+          <div class="preview-images">
+            <div class="preview-block">
+              <div class="preview-label">Slice grid</div>
+              <img id="img-grid" alt="Slice grid">
+            </div>
+            <div class="preview-block">
+              <div class="preview-label">Stacked outline</div>
+              <img id="img-overlay" alt="Slice overlay">
+            </div>
+          </div>
+
+          <div class="plate-table-wrap">
+            <div class="plate-table-header">
+              <span class="preview-label">Plate list</span>
+              <span class="muted" id="plate-count">—</span>
+            </div>
+            <table class="plate-table">
+              <thead>
+                <tr><th>#</th><th>Parts</th><th>W × H (mm)</th><th>Pins</th></tr>
+              </thead>
+              <tbody id="plate-tbody"></tbody>
+            </table>
+          </div>
+
+          <a id="btn-download" class="btn btn-download" href="#" download>
+            Download as ZIP
+          </a>
+        </div>
+      </section>
+
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <span>Made by Volkan Duran · Personal project</span>
+  </footer>
+
+  <!-- Three.js (3D viewer) -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+  <script type="module" src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

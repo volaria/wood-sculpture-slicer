@@ -419,43 +419,43 @@ def write_assembly_guide(result: SliceResult, processed_slices: list,
                          output_path: str, model_name: str,
                          kerf_mm: float, pin_diameter: float):
     """
-    Insan tarafindan okunabilir montaj rehberi.
+    Human-readable assembly guide written into the ZIP output.
     """
     lines = []
     lines.append("=" * 70)
-    lines.append(f"MONTAJ REHBERI: {model_name}")
+    lines.append(f"ASSEMBLY GUIDE: {model_name}")
     lines.append("=" * 70)
     lines.append("")
-    lines.append(f"Dilimleme ekseni    : {AXIS_NAMES[result.slice_axis]}")
-    lines.append(f"Plywood kalinligi   : {result.plywood_thickness} mm")
-    lines.append(f"Kerf telafisi       : {kerf_mm} mm (disa offset)")
-    lines.append(f"Hizalama pin capi   : {pin_diameter} mm")
-    lines.append(f"Heykel boyutu       : "
+    lines.append(f"Slice axis          : {AXIS_NAMES[result.slice_axis]}")
+    lines.append(f"Plywood thickness   : {result.plywood_thickness} mm")
+    lines.append(f"Kerf compensation   : {kerf_mm} mm (outward offset)")
+    lines.append(f"Alignment pin diam. : {pin_diameter} mm")
+    lines.append(f"Sculpture size      : "
                  f"{result.mesh_extents_mm[0]:.1f} x "
                  f"{result.mesh_extents_mm[1]:.1f} x "
                  f"{result.mesh_extents_mm[2]:.1f} mm")
-    lines.append(f"Toplam plaka sayisi : {len([p for p in processed_slices if p['polygons']])}")
+    lines.append(f"Total plates        : {len([p for p in processed_slices if p['polygons']])}")
     lines.append("")
-    lines.append("MONTAJ ADIMLARI:")
+    lines.append("ASSEMBLY STEPS:")
     lines.append("-" * 70)
-    lines.append("1. Tum plakalari kestiginizden emin olun (00 -> son numaraya kadar).")
-    lines.append("2. Her plakada 2-3 mavi cember (pin deligi) bulunur.")
-    lines.append(f"3. {pin_diameter}mm capli ahsap dowel pin (yuvarlak cubuk) hazirlayin.")
-    lines.append("4. Dowel pini en alttaki plakanin (00) deligine yerlestirin.")
-    lines.append("5. Plakalari sirayla pin uzerinden gecirin: 00, 01, 02, ...")
-    lines.append("6. Her plaka arasi YAPISTIRICI (PVA tutkali) uygulayin.")
-    lines.append("7. Tum plakalar dizildiginde mengeneye sikistirip kurumaya birakin.")
-    lines.append("8. Kuruduktan sonra dowel pinleri kesip yuzeyle hizalayin.")
+    lines.append("1. Confirm all plates are cut (plate 00 through the last number).")
+    lines.append("2. Each plate has 2–4 blue circles — these are alignment pin holes.")
+    lines.append(f"3. Prepare {pin_diameter} mm diameter wooden dowel pins.")
+    lines.append("4. Insert the dowel pin(s) into plate 00.")
+    lines.append("5. Stack plates in order onto the pin(s): 00, 01, 02, ...")
+    lines.append("6. Apply PVA wood glue between each plate.")
+    lines.append("7. Clamp the stack and allow to cure fully.")
+    lines.append("8. Once dry, trim the dowel pins flush with the surface.")
     lines.append("")
-    lines.append("ADACIK PARCALAR:")
+    lines.append("FLOATING PARTS (ISLANDS):")
     lines.append("-" * 70)
-    lines.append("Bazi dilimlerde birden fazla ayrik parca olabilir (orn. kulak, omuz).")
-    lines.append("Bu durumda kucuk parcalari ana parca ile birlikte ayni plakaya")
-    lines.append("yapistirin, ama mesafelerini koruyun (modelden olcun).")
+    lines.append("Some plates may contain multiple separate pieces (e.g. ears, shoulders).")
+    lines.append("Glue these smaller parts onto the main piece at the correct spacing.")
+    lines.append("Use the 3D model or the stacked-outline preview as a reference.")
     lines.append("")
-    lines.append("PLAKA LISTESI:")
+    lines.append("PLATE LIST:")
     lines.append("-" * 70)
-    lines.append(f"{'No':<5} {'Parca sayisi':<14} {'Boyut (W x H mm)':<20} {'Pin sayisi':<12}")
+    lines.append(f"{'No':<5} {'Parts':<14} {'Size W x H (mm)':<20} {'Pins':<12}")
 
     for ps in processed_slices:
         if not ps['polygons']:
@@ -472,7 +472,6 @@ def write_assembly_guide(result: SliceResult, processed_slices: list,
 
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write("\n".join(lines))
-
 
 # ============================================================
 # ANA EXPORT FONKSIYONU

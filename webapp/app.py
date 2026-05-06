@@ -16,7 +16,7 @@ from flask import Flask, jsonify, request
 
 from . import config
 from . import sessions as session_mgr
-
+from . import api
 
 def create_app() -> Flask:
     """Application factory."""
@@ -37,6 +37,9 @@ def create_app() -> Flask:
         level=logging.DEBUG if config.DEBUG else logging.INFO,
         format='%(asctime)s [%(levelname)s] %(message)s',
     )
+
+    # Blueprint'leri kaydet
+    app.register_blueprint(api.bp)
 
     # ------------------------------------------------------------------
     # Hooks

@@ -1,6 +1,8 @@
 """
 Dilim onizleme: tum dilimleri grid halinde matplotlib ile cizer.
 """
+import matplotlib
+matplotlib.use('Agg')  # Non-GUI backend - web sunucu thread'lerinde calisir
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon as MplPolygon
 import numpy as np

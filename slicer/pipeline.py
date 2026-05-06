@@ -20,6 +20,8 @@ def run_pipeline(
         model_path: str,
         output_dir: str = 'output',
         *,
+        # Model meta
+        model_name: Optional[str] = None,
         # Dilimleme parametreleri
         axis: str = 'X',
         size_axis: str = 'Z',
@@ -45,6 +47,8 @@ def run_pipeline(
     Args:
         model_path: OBJ veya STL dosya yolu
         output_dir: cikti klasoru (PNG, DXF/, SVG/, assembly_guide.txt buraya yazilir)
+        model_name: cikti dosyalarinin prefix'i (orn: 'Hermes' -> Hermes_slice_00.dxf).
+                    None ise model_path dosya adindan turetilir.
         axis: dilimleme ekseni 'X', 'Y' veya 'Z'
         size_axis: olcekleme hangi eksen uzerinden ('X', 'Y', 'Z')
         size_mm: hedef heykel boyutu mm (size_axis ekseninde)
@@ -109,8 +113,9 @@ def run_pipeline(
         slice_axis_idx = AXIS_MAP[axis]
         size_axis_idx = AXIS_MAP[size_axis]
 
-        # Model adi (dosya adindan, uzantisiz)
-        model_name = Path(model_path).stem
+        # Model adi: parametre verilmediyse dosya adindan turet
+        if model_name is None:
+            model_name = Path(model_path).stem
 
         # Cikti klasoru hazirla
         os.makedirs(output_dir, exist_ok=True)

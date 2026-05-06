@@ -1,0 +1,9 @@
+ezdxf==1.4.3
+matplotlib==3.10.9
+networkx==3.6.1
+numpy==2.4.4
+rtree==1.4.1
+scipy==1.17.1
+shapely==2.1.2
+svgwrite==1.4.3
+trimesh==4.12.2

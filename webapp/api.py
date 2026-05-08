@@ -18,6 +18,7 @@ from flask import Blueprint, request, jsonify, send_file, abort
 from . import config
 from . import sessions as session_mgr
 from . import validators
+from .validators import validate_nesting_params
 from slicer.pipeline import run_pipeline
 from slicer.loader import load_mesh, analyze_mesh
 
@@ -160,6 +161,11 @@ def process():
     if err:
         return jsonify({'error': err}), 400
 
+    # Nesting parametrelerini dogrula
+    nclean, nerr = validate_nesting_params(data)
+    if nerr:
+        return jsonify({'error': nerr}), 400
+
     # Pipeline calistir (sync, max 60 sn beklenir)
     output_dir = session_mgr.session_output_dir(session_id)
 
@@ -193,9 +199,17 @@ def process():
             formats=clean['formats'],
             generate_preview=True,
             export=True,
-            verbose=False,  # stdout'a basma, sadece callback
+            verbose=False,
             log_callback=log_lines.append,
+            # Nesting
+            run_nesting=nclean.get('run_nesting', False),
+            nesting_sheet_width=nclean.get('nesting_sheet_width', 297.0),
+            nesting_sheet_height=nclean.get('nesting_sheet_height', 420.0),
+            nesting_gap=nclean.get('nesting_gap', 2.0),
+            nesting_rotation=nclean.get('nesting_rotation', True),
+            nesting_preserve_grain=nclean.get('nesting_preserve_grain', False),
         )
+
     except Exception as e:
         logger.exception("Pipeline crashed")
         return jsonify({
@@ -224,6 +238,7 @@ def process():
         'plate_summary': result['plate_summary'],
         'download_url': f'/api/download/{session_id}',
         'formats': clean['formats'],
+        'nesting': result.get('nesting'),
     }), 200
 
 

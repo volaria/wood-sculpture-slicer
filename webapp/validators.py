@@ -133,3 +133,54 @@ def validate_process_params(data: dict) -> Tuple[Optional[dict], Optional[str]]:
     clean['formats'] = val
 
     return clean, None
+
+def validate_nesting_params(data: dict) -> tuple:
+    """
+    Nesting parametrelerini dogrula.
+    Returns: (clean_params, error_msg)
+    """
+    if not isinstance(data, dict):
+        return None, "Invalid request body"
+
+    clean = {}
+
+    # run_nesting
+    rn_raw = data.get('run_nesting', False)
+    val, err = validate_bool(rn_raw, 'run_nesting')
+    if err:
+        return None, err
+    clean['run_nesting'] = val
+
+    if not val:
+        return clean, None  # nesting istenmiyorsa diger parametrelere bakma
+
+    # Sheet boyutlari
+    for key in ('nesting_sheet_width', 'nesting_sheet_height'):
+        raw = data.get(key, 297.0 if 'width' in key else 420.0)
+        try:
+            v = float(raw)
+        except (TypeError, ValueError):
+            return None, f"'{key}' must be a number"
+        if v < 50 or v > 3000:
+            return None, f"'{key}' must be between 50 and 3000 mm (got {v})"
+        clean[key] = v
+
+    # Gap
+    raw = data.get('nesting_gap', 2.0)
+    try:
+        v = float(raw)
+    except (TypeError, ValueError):
+        return None, "'nesting_gap' must be a number"
+    if v < 0 or v > 20:
+        return None, f"'nesting_gap' must be between 0 and 20 mm (got {v})"
+    clean['nesting_gap'] = v
+
+    # Rotation ve grain
+    for key in ('nesting_rotation', 'nesting_preserve_grain'):
+        raw = data.get(key, True if key == 'nesting_rotation' else False)
+        val, err = validate_bool(raw, key)
+        if err:
+            return None, err
+        clean[key] = val
+
+    return clean, None

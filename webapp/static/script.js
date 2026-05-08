@@ -513,3 +513,186 @@ function showResults(data) {
 
 // Üret butonu event listener
 dom2.btnProcess.addEventListener('click', runProcess);
+
+// =====================================================================
+// Nesting UI
+// =====================================================================
+
+const domN = {
+  btnNest:        $('btn-nest'),
+  btnNestLabel:   document.querySelector('#btn-nest .btn-nest-label'),
+  btnNestSpinner: document.querySelector('#btn-nest .btn-nest-spinner'),
+  nestError:      $('nest-error'),
+  nestResult:     $('nest-result'),
+  nestReportGrid: $('nest-report-grid'),
+  btnNestDl:      $('btn-nest-download'),
+  preserveGrain:  $('preserve-grain'),
+  nestingGap:     $('nesting-gap'),
+  sheetW:         $('sheet-w'),
+  sheetH:         $('sheet-h'),
+  customRow:      $('custom-sheet-row'),
+};
+
+
+// Sheet size radio → custom row goster/gizle
+document.querySelectorAll('input[name="sheet-size"]').forEach(radio => {
+  radio.addEventListener('change', () => {
+    const isCustom = radio.value === 'custom' && radio.checked;
+    domN.customRow.style.display = isCustom ? 'grid' : 'none';
+  });
+});
+
+
+function getSheetSize() {
+  const selected = document.querySelector('input[name="sheet-size"]:checked');
+  const val = selected ? selected.value : 'A3';
+  const sizes = {
+    'A4': [210, 297],
+    'A3': [297, 420],
+    'custom': [
+      parseFloat(domN.sheetW.value) || 297,
+      parseFloat(domN.sheetH.value) || 420,
+    ],
+  };
+  return sizes[val] || [297, 420];
+}
+
+
+function getNestingParams() {
+  const [sw, sh] = getSheetSize();
+  return {
+    session_id: state.sessionId,
+    // Mevcut slice parametrelerini de gonder (pipeline tekrar calisacak)
+    ...getFormParams(),
+    // Nesting
+    run_nesting: true,
+    nesting_sheet_width: sw,
+    nesting_sheet_height: sh,
+    nesting_gap: parseFloat(domN.nestingGap.value) || 2.0,
+    nesting_rotation: !domN.preserveGrain.checked,
+    nesting_preserve_grain: domN.preserveGrain.checked,
+  };
+}
+
+
+function setNestButtonLoading(loading) {
+  if (loading) {
+    domN.btnNest.disabled = true;
+    domN.btnNestLabel.textContent = 'Processing...';
+    show(domN.btnNestSpinner);
+  } else {
+    domN.btnNest.disabled = !state.sessionId;
+    domN.btnNestLabel.textContent = 'Nest & Export';
+    hide(domN.btnNestSpinner);
+  }
+}
+
+
+function showNestError(msg) {
+  domN.nestError.textContent = msg;
+  show(domN.nestError);
+}
+
+function hideNestError() {
+  hide(domN.nestError);
+  domN.nestError.textContent = '';
+}
+
+
+function showNestResult(nesting, session_id) {
+  if (!nesting) return;
+
+  // Rapor grid
+  domN.nestReportGrid.innerHTML = `
+    <div class="stat">
+      <span class="stat-label">Sheets</span>
+      <span class="stat-value">${nesting.sheet_count}</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">Placed</span>
+      <span class="stat-value">${nesting.placed_items}/${nesting.total_items}</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">Unplaced</span>
+      <span class="stat-value" style="color:${nesting.unplaced_items > 0 ? '#ef4444' : '#10b981'}">
+        ${nesting.unplaced_items}
+      </span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">Avg use</span>
+      <span class="stat-value">${nesting.avg_utilization}%</span>
+    </div>
+  `;
+
+  // Download linki — nesting ZIP icin ayri endpoint yok, ana download URL'i kullan
+  // (pipeline nesting dosyalarini da output'a yaziyor, ZIP'e giriyor)
+  domN.btnNestDl.href = `/api/download/${session_id}`;
+  domN.btnNestDl.download = `nested_sheets_${session_id.slice(0, 8)}.zip`;
+
+  show(domN.nestResult);
+  domN.nestResult.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+
+async function runNesting() {
+  if (!state.sessionId) {
+    showNestError('Please upload and process a model first');
+    return;
+  }
+
+  hideNestError();
+  hide(domN.nestResult);
+  setNestButtonLoading(true);
+
+  try {
+    const params = getNestingParams();
+    const res = await fetch('/api/process', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      showNestError(data.error || 'Nesting failed');
+      return;
+    }
+
+    // Slice sonuclarini da guncelle
+    showResults(data);
+
+    // Nesting sonucunu goster
+    if (data.nesting) {
+      showNestResult(data.nesting, data.session_id);
+    } else {
+      showNestError('Nesting result not returned from server');
+    }
+
+  } catch (err) {
+    showNestError('Server error: ' + err.message);
+  } finally {
+    setNestButtonLoading(false);
+  }
+}
+
+
+// Nest butonu event listener
+domN.btnNest.addEventListener('click', runNesting);
+
+
+// Generate tamamlaninca Nest butonunu aktif et
+const _origShowResults = showResults;
+// showResults zaten tanimli, nest butonunu aktif etmek icin wrap et
+const _showResultsOrig = showResults;
+window._nestActivate = function() {
+  if (state.sessionId) {
+    domN.btnNest.disabled = false;
+  }
+};
+
+// Generate butonunun click handler'ini guncelle
+dom2.btnProcess.removeEventListener('click', runProcess);
+dom2.btnProcess.addEventListener('click', async () => {
+  await runProcess();
+  window._nestActivate();
+});

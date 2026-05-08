@@ -121,7 +121,59 @@
           <span class="btn-spinner hidden"></span>
         </button>
 
-        <div id="process-error" class="error-box hidden"></div>
+<div id="process-error" class="error-box hidden"></div>
+      </section>
+
+      <!-- 3. NESTING -->
+      <section class="card">
+        <h2 class="card-title"><span class="step">3</span> Nesting</h2>
+
+        <div class="form-group">
+          <label class="form-label">Sheet size</label>
+          <div class="radio-row">
+            <label class="radio"><input type="radio" name="sheet-size" value="A4" ><span>A4</span></label>
+            <label class="radio"><input type="radio" name="sheet-size" value="A3" checked><span>A3</span></label>
+            <label class="radio"><input type="radio" name="sheet-size" value="custom"><span>Custom</span></label>
+          </div>
+        </div>
+
+        <div class="form-row" id="custom-sheet-row" style="display:none">
+          <div class="form-group">
+            <label class="form-label" for="sheet-w">Width <span class="muted">(mm)</span></label>
+            <input type="number" id="sheet-w" min="50" max="3000" step="1" value="297">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="sheet-h">Height <span class="muted">(mm)</span></label>
+            <input type="number" id="sheet-h" min="50" max="3000" step="1" value="420">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="nesting-gap">Gap between parts <span class="muted">(mm)</span></label>
+          <input type="number" id="nesting-gap" min="0" max="20" step="0.5" value="2.0">
+        </div>
+
+        <div class="form-group">
+          <label class="checkbox checkbox-line">
+            <input type="checkbox" id="preserve-grain">
+            <span>Preserve wood grain <span class="muted">(no rotation)</span></span>
+          </label>
+        </div>
+
+        <button id="btn-nest" class="btn btn-primary" disabled>
+          <span class="btn-nest-label">Nest & Export</span>
+          <span class="btn-nest-spinner hidden"></span>
+        </button>
+
+        <div id="nest-error" class="error-box hidden"></div>
+
+        <div id="nest-result" class="hidden" style="margin-top:14px">
+          <div class="report-grid" id="nest-report-grid"></div>
+          <a id="btn-nest-download" class="btn btn-download" href="#" download style="margin-top:8px">
+            Download nested sheets (ZIP)
+          </a>
+        </div>
+
       </section>
 
     </aside>

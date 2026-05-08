@@ -12,6 +12,7 @@ from .slicer import (
 )
 from .viewer import plot_slice_grid, plot_assembly_preview
 from .exporter import export_all
+from .nester import nest_slices, NestingParams, export_nesting
 
 AXIS_MAP = {'X': AXIS_X, 'Y': AXIS_Y, 'Z': AXIS_Z}
 
@@ -37,6 +38,13 @@ def run_pipeline(
         formats: Optional[list] = None,
         generate_preview: bool = True,
         export: bool = True,
+        # Nesting parametreleri
+        run_nesting: bool = False,
+        nesting_sheet_width: float = 297.0,
+        nesting_sheet_height: float = 420.0,
+        nesting_gap: float = 2.0,
+        nesting_rotation: bool = True,
+        nesting_preserve_grain: bool = False,
         # Loglama
         verbose: bool = True,
         log_callback=None,
@@ -101,6 +109,7 @@ def run_pipeline(
         'export_paths': {},
         'output_dir': os.path.abspath(output_dir),
         'plate_summary': [],
+        'nesting': None,  # nesting sonucu (run_nesting=True ise dolar)
     }
 
     try:
@@ -230,7 +239,48 @@ def run_pipeline(
                 )
             result_data['export_paths'] = export_paths
 
-        result_data['success'] = True
+            # 5. NESTING (opsiyonel)
+            if run_nesting and export:
+                log(f"\nNesting (sheet={nesting_sheet_width}x{nesting_sheet_height}mm, "
+                    f"gap={nesting_gap}mm, rotation={'yes' if nesting_rotation else 'no'})...")
+
+                nparams = NestingParams(
+                    sheet_width=nesting_sheet_width,
+                    sheet_height=nesting_sheet_height,
+                    gap=nesting_gap,
+                    allow_rotation=nesting_rotation,
+                    preserve_grain=nesting_preserve_grain,
+                )
+
+                # processed_slices export adiminda uretildi, tekrar uret
+                from .exporter import process_slice as _process_slice
+                processed_for_nesting = [
+                    _process_slice(sl, kerf_mm=kerf_mm, pin_diameter=pin_diameter_mm)
+                    for sl in slice_result.slices
+                ]
+
+                nest_result = nest_slices(processed_for_nesting, nparams)
+                nest_export = export_nesting(
+                    nest_result,
+                    output_dir=output_dir,
+                    model_name=model_name,
+                    formats=formats,
+                )
+
+                result_data['nesting'] = {
+                    'sheet_count': nest_result.sheet_count,
+                    'placed_items': nest_result.placed_items,
+                    'total_items': nest_result.total_items,
+                    'unplaced_items': nest_result.unplaced_items,
+                    'avg_utilization': nest_result.avg_utilization,
+                    'report': nest_export['report'],
+                    'dxf_dir': nest_export.get('dxf_dir'),
+                    'svg_dir': nest_export.get('svg_dir'),
+                }
+                log(f"  Sheets: {nest_result.sheet_count}, "
+                    f"utilization: {nest_result.avg_utilization}%")
+
+            result_data['success'] = True
         log("\nIslem tamamlandi.")
 
     except FileNotFoundError as e:

@@ -21,6 +21,11 @@
     </nav>
   </header>
 
+<div class="warning-banner">
+    ⚠️ <strong>Experimental software.</strong>
+    Outputs are not verified — test on scrap material before cutting anything expensive.
+  </div>
+
   <main class="layout">
 
     <!-- LEFT PANEL: controls -->
@@ -234,9 +239,30 @@
 
   </main>
 
-  <footer class="footer">
-    <span>Made by Volkan Duran · Personal project</span>
-  </footer>
+  <section class="feedback-section">
+    <h3 class="feedback-title">Comments & Feedback</h3>
+    <p class="feedback-desc">Share your experience — what worked, what didn't.</p>
+
+    <form id="comment-form" class="comment-form">
+      <input type="text" id="comment-name" placeholder="Your name (optional)" maxlength="100">
+      <textarea id="comment-text" placeholder="Your comment..." maxlength="2000" rows="3" required></textarea>
+      <button type="submit" class="btn btn-primary" id="btn-comment" style="width:auto; padding: 10px 24px;">
+        Submit
+      </button>
+      <div id="comment-success" class="comment-success hidden">✓ Thank you for your feedback!</div>
+      <div id="comment-error" class="error-box hidden"></div>
+    </form>
+
+    <div id="comments-list" class="comments-list"></div>
+  </section>
+
+    <footer class="footer">
+      <span>Made by Volkan Duran · Personal project</span>
+      <span class="footer-sep">·</span>
+      <a href="mailto:duranvolkan@gmail.com" class="footer-link">duranvolkan@gmail.com</a>
+      <span class="footer-sep">·</span>
+      <a href="https://github.com/volaria/wood-sculpture-slicer/issues" target="_blank" class="footer-link">GitHub Issues</a>
+    </footer>
 
   <!-- Three.js (3D viewer) -->
   <script type="importmap">

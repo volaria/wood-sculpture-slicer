@@ -20,6 +20,8 @@ from . import sessions as session_mgr
 from . import validators
 from .validators import validate_nesting_params
 from slicer.pipeline import run_pipeline
+from .comments import init_db, save_comment, get_comments, get_comment_count
+init_db()  # uygulama baslarken tabloyu olustur
 from slicer.loader import load_mesh, analyze_mesh
 
 bp = Blueprint('api', __name__, url_prefix='/api')
@@ -322,3 +324,56 @@ def download(session_id):
         as_attachment=True,
         download_name=filename,
     )
+
+# =====================================================================
+# COMMENTS
+# =====================================================================
+
+@bp.route('/comment', methods=['POST'])
+def post_comment():
+    """
+    JSON govde: {"name": "...", "comment": "..."}
+    """
+    data = request.get_json(silent=True)
+    if not data:
+        return jsonify({'error': 'JSON body required'}), 400
+
+    name = data.get('name', '').strip()
+    comment = data.get('comment', '').strip()
+
+    if not comment:
+        return jsonify({'error': 'Comment cannot be empty'}), 400
+
+    if len(comment) > 2000:
+        return jsonify({'error': 'Comment too long (max 2000 chars)'}), 400
+
+    try:
+        saved = save_comment(name, comment)
+        return jsonify({'success': True, 'comment': saved}), 201
+    except Exception as e:
+        logger.exception("Comment save failed")
+        return jsonify({'error': str(e)}), 500
+
+
+@bp.route('/comments', methods=['GET'])
+def list_comments():
+    """
+    Yorumlari listele.
+    Query params: limit (default 50), offset (default 0)
+    """
+    try:
+        limit = min(int(request.args.get('limit', 50)), 100)
+        offset = int(request.args.get('offset', 0))
+    except ValueError:
+        limit, offset = 50, 0
+
+    try:
+        comments = get_comments(limit=limit, offset=offset)
+        total = get_comment_count()
+        return jsonify({
+            'comments': comments,
+            'total': total,
+        }), 200
+    except Exception as e:
+        logger.exception("Comment list failed")
+        return jsonify({'error': str(e)}), 500

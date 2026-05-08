@@ -340,13 +340,6 @@ function clear3DViewer() {
 }
 
 // =====================================================================
-// Init
-// =====================================================================
-document.addEventListener('DOMContentLoaded', () => {
-  setupDropzone();
-});
-
-// =====================================================================
 // Process (Üret butonu)
 // =====================================================================
 const dom2 = {
@@ -695,4 +688,109 @@ dom2.btnProcess.removeEventListener('click', runProcess);
 dom2.btnProcess.addEventListener('click', async () => {
   await runProcess();
   window._nestActivate();
+});
+
+// =====================================================================
+// Comments
+// =====================================================================
+
+async function loadComments() {
+  try {
+    const res = await fetch('/api/comments?limit=50');
+    const data = await res.json();
+
+    const list = $('comments-list');
+    if (!list) return;
+
+    if (!data.comments || data.comments.length === 0) {
+      list.innerHTML = '<div class="comments-empty">No comments yet. Be the first!</div>';
+      return;
+    }
+
+    list.innerHTML = data.comments.map(c => `
+      <div class="comment-item">
+        <div class="comment-header">
+          <span class="comment-name">${escapeHtml(c.name)}</span>
+          <span class="comment-date">${c.created_at} UTC</span>
+        </div>
+        <div class="comment-text">${escapeHtml(c.comment)}</div>
+      </div>
+    `).join('');
+  } catch (err) {
+    console.error('Failed to load comments:', err);
+  }
+}
+
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+
+function setupCommentForm() {
+  const form = $('comment-form');
+  if (!form) return;
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const name = $('comment-name').value.trim();
+    const comment = $('comment-text').value.trim();
+    const btnComment = $('btn-comment');
+    const successBox = $('comment-success');
+    const errorBox = $('comment-error');
+
+    hide(successBox);
+    hide(errorBox);
+
+    if (!comment) {
+      errorBox.textContent = 'Please write a comment before submitting.';
+      show(errorBox);
+      return;
+    }
+
+    btnComment.disabled = true;
+    btnComment.textContent = 'Submitting...';
+
+    try {
+      const res = await fetch('/api/comment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, comment }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        errorBox.textContent = data.error || 'Failed to submit comment.';
+        show(errorBox);
+        return;
+      }
+
+      // Basarili
+      $('comment-name').value = '';
+      $('comment-text').value = '';
+      show(successBox);
+      await loadComments();  // listeyi yenile
+
+    } catch (err) {
+      errorBox.textContent = 'Server error: ' + err.message;
+      show(errorBox);
+    } finally {
+      btnComment.disabled = false;
+      btnComment.textContent = 'Submit';
+    }
+  });
+}
+
+
+// Sayfa yuklenince yorumlari getir ve formu kur
+document.addEventListener('DOMContentLoaded', () => {
+  setupDropzone();
+  setupCommentForm();
+  loadComments();
 });

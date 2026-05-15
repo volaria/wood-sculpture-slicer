@@ -181,7 +181,8 @@ def _find_nearest_safe_point(safe_zone, target_x, target_y):
 
 def process_slice(slice_obj: Slice, kerf_mm: float, pin_diameter: float,
                   min_dim_for_pin: float = 30.0,
-                  min_dim_for_grid: float = 60.0) -> dict:
+                  min_dim_for_grid: float = 60.0,
+                  global_pins: list = None) -> dict:
     """
     Bir dilim icin kerf uygular ve pin deliklerini hesaplar.
 
@@ -204,13 +205,17 @@ def process_slice(slice_obj: Slice, kerf_mm: float, pin_diameter: float,
             continue
         processed_polys.append(kp)
 
-        # Pin deliklerini hesapla (yeni mantik: 2x2 grid veya 2 pin sirali)
-        pins = generate_pin_holes(
-            kp,
-            pin_diameter=pin_diameter,
-            min_dim_for_pin=min_dim_for_pin,
-            min_dim_for_grid=min_dim_for_grid,
-        )
+        # Pin deliklerini hesapla
+        if global_pins is not None:
+            # Global sabit konumlar: polygon icinde olan pinleri al
+            pins = [p for p in global_pins if kp.contains(p)]
+        else:
+            pins = generate_pin_holes(
+                kp,
+                pin_diameter=pin_diameter,
+                min_dim_for_pin=min_dim_for_pin,
+                min_dim_for_grid=min_dim_for_grid,
+            )
         all_pins.extend(pins)
 
     return {
@@ -476,6 +481,60 @@ def write_assembly_guide(result: SliceResult, processed_slices: list,
 # ============================================================
 # ANA EXPORT FONKSIYONU
 # ============================================================
+def _compute_global_pins(slices, pin_diameter,
+                          min_dim_for_pin=30.0,
+                          min_dim_for_grid=60.0):
+    """
+    Tum dilimlerin global bounding box'indan sabit pin konumlari uretir.
+    Her dilimde ayni XY koordinatlarinda pinler olur.
+    """
+    from shapely.geometry import Point
+
+    # Tum dilimlerin global bbox'ini bul
+    all_minx, all_miny, all_maxx, all_maxy = [], [], [], []
+    for sl in slices:
+        for poly in sl.polygons:
+            b = poly.bounds
+            all_minx.append(b[0])
+            all_miny.append(b[1])
+            all_maxx.append(b[2])
+            all_maxy.append(b[3])
+
+    if not all_minx:
+        return []
+
+    gminx = min(all_minx)
+    gminy = min(all_miny)
+    gmaxx = max(all_maxx)
+    gmaxy = max(all_maxy)
+
+    width  = gmaxx - gminx
+    height = gmaxy - gminy
+    margin = 8.0
+
+    # Pin sayisi: global boyuta gore
+    min_dim = min(width, height)
+    if min_dim < min_dim_for_pin:
+        return []
+
+    # Global grid pin konumlari
+    if width >= min_dim_for_grid and height >= min_dim_for_grid:
+        # 2x2 grid
+        xs = [gminx + width * 0.20, gminx + width * 0.80]
+        ys = [gminy + height * 0.20, gminy + height * 0.80]
+        pins = [Point(x, y) for x in xs for y in ys]
+    elif width >= height:
+        # Yatay 2 pin
+        xs = [gminx + width * 0.20, gminx + width * 0.80]
+        y  = gminy + height * 0.50
+        pins = [Point(x, y) for x in xs]
+    else:
+        # Dikey 2 pin
+        x  = gminx + width * 0.50
+        ys = [gminy + height * 0.20, gminy + height * 0.80]
+        pins = [Point(x, y) for y in ys]
+
+    return pins
 
 def export_all(result: SliceResult, output_dir: str,
                model_name: str = "model",
@@ -516,11 +575,19 @@ def export_all(result: SliceResult, output_dir: str,
     print(f"\nIsleniyor: kerf={kerf_mm}mm, pin capi={pin_diameter}mm, "
           f"edge tick={'ACIK' if edge_tick else 'KAPALI'}")
     processed_slices = []
+    # Global pin konumlarini hesapla (tum dilimler icin sabit)
+    global_pins = _compute_global_pins(
+        result.slices, pin_diameter,
+        min_dim_for_pin=min_dim_for_pin,
+        min_dim_for_grid=min_dim_for_grid,
+    )
+
     for sl in result.slices:
         ps = process_slice(
             sl, kerf_mm, pin_diameter,
             min_dim_for_pin=min_dim_for_pin,
             min_dim_for_grid=min_dim_for_grid,
+            global_pins=global_pins,
         )
         processed_slices.append(ps)
 
